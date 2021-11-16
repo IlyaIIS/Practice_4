@@ -138,7 +138,7 @@ namespace Database
 
                     for (int i = 1; i < files.Length; i += 2)
                     {
-                        MergeTwoSortedTables(newDirectoryPath + @"\temp_" + i, files[i - 1], files[i], attributeNum, ascending);
+                        MergeSortedTables(newDirectoryPath + @"\temp_" + i / 2, new string[] { files[i - 1], files[i] }, attributeNum, ascending);
                     }
                     if (files.Length % 2 == 1)
                         File.Copy(files[^1], newDirectoryPath + @"\temp_" + files.Length / 2);
@@ -155,7 +155,7 @@ namespace Database
                 string directoryPath = "temp";
 
                 SplitIntoTablesNaturally(directoryPath, attributeNum, ascending);
-                MergeManySortedTables(outputPath, Directory.GetFiles(directoryPath), attributeNum, ascending);
+                MergeSortedTables(outputPath, Directory.GetFiles(directoryPath), attributeNum, ascending);
 
                 return (new Table(outputPath));
             }
@@ -175,7 +175,7 @@ namespace Database
                 Table table2 = new Table(path2);
                 table1.SubSortDirectly(path1, ascending, columnNum, depth + 1);
                 table2.SubSortDirectly(path2, ascending, columnNum, depth + 1);
-                MergeTwoSortedTables(outputPath, path1, path2, columnNum, ascending);
+                MergeSortedTables(outputPath, new string[] { path1, path2 }, columnNum, ascending);
             }
             else
             {
@@ -288,71 +288,7 @@ namespace Database
 
             originFile.Close();
         }
-        void MergeTwoSortedTables(string outputPath, string inputPath1, string inputPath2, int columnNum, bool ascending)
-        {
-            int dir = ascending ? 1 : -1;
-            Table table1 = new Table(inputPath1);
-            Table table2 = new Table(inputPath2);
-            Table outputTable = new Table(outputPath, table1, false);
-
-            StreamReader file1 = new StreamReader(inputPath1);
-            StreamReader file2 = new StreamReader(inputPath2);
-            StreamWriter outputFile = new StreamWriter(outputPath);
-
-            for (int i = 0; i < 3; i++)
-            {
-                file1.ReadLine();
-                outputFile.WriteLine(file2.ReadLine());
-            }
-
-            string line1 = file1.ReadLine();
-            string line2 = file2.ReadLine();
-            TableElement[] elements1 = ParseToElements(ParseLine(line1, ColumnCount), ColumnCount, Types);
-            TableElement[] elements2 = ParseToElements(ParseLine(line2, ColumnCount), ColumnCount, Types);
-            do
-            {
-                if (elements1[columnNum].CompareTo(elements2[columnNum]) == dir)
-                {
-                    outputFile.WriteLine(line2);
-                    if (!file2.EndOfStream)
-                    {
-                        line2 = file2.ReadLine();
-                        elements2 = ParseToElements(ParseLine(line2, ColumnCount), ColumnCount, Types);
-                    }
-                    else
-                    {
-                        outputFile.WriteLine(line1);
-                        break;
-                    }
-                }
-                else
-                {
-                    outputFile.WriteLine(line1);
-                    if (!file1.EndOfStream)
-                    {
-                        line1 = file1.ReadLine();
-                        elements1 = ParseToElements(ParseLine(line1, ColumnCount), ColumnCount, Types);
-                    }
-                    else
-                    {
-                        outputFile.WriteLine(line2);
-                        break;
-                    }
-                }
-            } while (true);
-
-            while (!file1.EndOfStream)
-                outputFile.WriteLine(file1.ReadLine());
-            while (!file2.EndOfStream)
-                outputFile.WriteLine(file2.ReadLine());
-
-            file1.Close();
-            file2.Close();
-            outputFile.Close();
-
-            outputTable.SetRowCount(table1.RowCount + table2.RowCount);
-        }
-        void MergeManySortedTables(string outputPath, string[] inputPath, int columnNum, bool ascending)
+        void MergeSortedTables(string outputPath, string[] inputPath, int columnNum, bool ascending)
         {
             int dir = ascending ? 1 : -1;
             Table[] tables = new Table[inputPath.Length];
