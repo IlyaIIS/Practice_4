@@ -35,7 +35,7 @@ namespace Database
             bool ascending = int.Parse(Console.ReadLine()) == 1;
 
             Console.Write("Выберите тип сортировки (1 - прямая, 2 - натуральная, 3 - многопутевая): ");
-            SortType sortType = (SortType)int.Parse(Console.ReadLine());
+            SortType sortType = (SortType)(int.Parse(Console.ReadLine()) - 1);
 
             Condition condition = AskCondition(inputTable);
 

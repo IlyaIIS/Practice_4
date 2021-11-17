@@ -17,7 +17,7 @@ namespace WordsSort
             {
                 PdfFocus f = new PdfFocus();
                 f.OpenPdf(@"..\..\..\" + fileName);
-                f.ToText(textFilePath,2,15);
+                f.ToText(textFilePath,2,10);
             }
 
             return GetSortedWordsArrayFromFile(textFilePath, sortType);

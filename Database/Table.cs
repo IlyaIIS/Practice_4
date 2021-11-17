@@ -65,7 +65,7 @@ namespace Database
             string[] output = new string[columnCount];
             StringBuilder substring = new StringBuilder();
             int i = 0;
-            foreach(char el in line)
+            foreach (char el in line)
             {
                 if (el == SeparatingSign)
                 {
@@ -182,7 +182,7 @@ namespace Database
                 return;
             }
         }
-        
+
         void SplitIntoTwoTableDirectly(string outputPath1, string outputPath2)
         {
             if (!File.Exists(outputPath1))
@@ -239,7 +239,7 @@ namespace Database
             }
 
             if (Directory.Exists(outputDirectoryPath))
-                Directory.Delete(outputDirectoryPath,true);
+                Directory.Delete(outputDirectoryPath, true);
             Directory.CreateDirectory(outputDirectoryPath);
 
             int j = 0;
@@ -253,7 +253,7 @@ namespace Database
                 currentFile = new StreamWriter(path);
                 int rowCount = 0;
 
-                foreach(string line in metadata)
+                foreach (string line in metadata)
                     currentFile.WriteLine(line);
 
                 while (true)
@@ -383,7 +383,7 @@ namespace Database
                 outputFile.WriteLine(inputFile.ReadLine());
             }
             int j = 0;
-            while(!inputFile.EndOfStream)
+            while (!inputFile.EndOfStream)
             {
                 string line = inputFile.ReadLine();
                 TableElement[] elements = ParseToElements(ParseLine(line, table.ColumnCount), table.ColumnCount, table.Types);
@@ -406,8 +406,8 @@ namespace Database
         {
             int i = 0;
             string tempPath = path + ".tmp";
-            using (StreamReader sr = new StreamReader(path)) 
-            using (StreamWriter sw = new StreamWriter(tempPath)) 
+            using (StreamReader sr = new StreamReader(path))
+            using (StreamWriter sw = new StreamWriter(tempPath))
             {
                 while (!sr.EndOfStream)
                 {
@@ -423,7 +423,7 @@ namespace Database
                     i++;
                 }
             }
-            File.Delete(path); 
+            File.Delete(path);
             File.Move(tempPath, path);
         }
     }
@@ -434,13 +434,11 @@ namespace Database
         string Attribute { get; }
         int attributeNum;
         ConditionDelegate function;
-        Table table;
         public Condition(Table table, string attribute, ConditionDelegate conditionFunction)
         {
             Attribute = attribute;
             function = conditionFunction;
             attributeNum = Array.IndexOf(table.Attributes, Attribute);
-            this.table = table;
         }
         public bool Satisfies(TableElement[] elements)
         {

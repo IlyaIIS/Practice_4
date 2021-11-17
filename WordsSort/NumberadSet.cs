@@ -114,7 +114,6 @@ namespace WordsSort
     }
 
     /// <summary> Пара значение-количество. </summary>
-
     public class ValueCountPair<T>
     {
         public T Value { get; }
