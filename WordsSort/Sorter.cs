@@ -9,18 +9,21 @@ namespace WordsSort
 {
     static class Sorter
     {
-        public static string[] GetSortedWordsArrayFromPdf(string fileName, SortType sortType)
+        public static string[] GetSortedWordsArrayFromPdf(string fileName, SortType sortType, int pageCount)
         {
             string textFilePath = fileName.Replace(".pdf", ".txt");
+            textFilePath = textFilePath.Insert(textFilePath.Length - 4, "_" + pageCount);
 
-            //if (!File.Exists(textFilePath))
+            if (!File.Exists(textFilePath))
             {
                 PdfFocus f = new PdfFocus();
                 f.OpenPdf(@"..\..\..\" + fileName);
-                f.ToText(textFilePath,2,10);
+                f.ToText(textFilePath,2,pageCount);
             }
-
-            return GetSortedWordsArrayFromFile(textFilePath, sortType);
+            DateTime time = DateTime.Now;
+            string[] output = GetSortedWordsArrayFromFile(textFilePath, sortType);
+            Console.WriteLine(output.Length + " - " + Math.Round(DateTime.Now.Subtract(time).TotalMilliseconds));
+            return output;
         }
 
         public static string[] GetSortedWordsArrayFromFile(string filePath, SortType sortType)
@@ -34,10 +37,10 @@ namespace WordsSort
                 string minWord = GetMinWord(ref subArrays);
                 while (minWord != null)
                 {
-                    //
+                    /*
                     if (output.Count % 100 == 0)
                         Console.Write("\r" + subArrays.Count);
-                    //
+                    //*/
 
                     output.Add(minWord);
                     minWord = GetMinWord(ref subArrays);
@@ -49,16 +52,101 @@ namespace WordsSort
             {
                 return GetInsertsSortedArray(filePath);
             }
+            else if (sortType == SortType.MSD)
+            {
+                return GetMsdSortedArray(filePath).ToArray();
+            }
             else
             {
                 throw new Exception("Нереализованный тип сортировки");
             }
         }
 
+        private static List<string> GetMsdSortedArray(string filePath)
+        {
+            List<string> words = new List<string>();
+
+            StreamReader file = new StreamReader(filePath);
+
+            StringBuilder subString = new StringBuilder();
+            string pastWord = string.Empty;
+            int characterInt = 0;
+            while (characterInt != -1)
+            {
+                do
+                {
+                    characterInt = file.Read();
+                } while (characterInt != -1 && !(
+                (characterInt >= 65 && characterInt <= 90) || 
+                (characterInt >= 97 && characterInt <= 122) || 
+                characterInt == 32 || characterInt == 13));
+                char character = Char.ToLower((char)characterInt);
+
+                if (character != ' ' && character != '\n' && characterInt != -1)
+                {
+                    subString.Append(character);
+                }
+                else
+                {
+                    if (pastWord.Length != 0)
+                    {
+                        words.Add(pastWord);
+                    }
+
+                    pastWord = subString.ToString();
+                    subString.Clear();
+                }
+            }
+            if (pastWord.Length != 0)
+                words.Add(pastWord);
+
+            return GetRecursiveMsdSortedArray(words, 0);
+        }
+
+        private static List<string> GetRecursiveMsdSortedArray(List<string> array, int depth)
+        {
+            if (array.Count > 1)
+            {
+                Dictionary<char, List<string>> baskets = new Dictionary<char, List<string>>();
+                baskets.Add((char)96, new List<string>());
+                foreach (string word in array)
+                {
+                    if (depth < word.Length)
+                    {
+                        if (baskets.ContainsKey(word[depth]))
+                            baskets[word[depth]].Add(word);
+                        else
+                            baskets.Add(word[depth], new List<string> { word });
+                    }
+                    else
+                    {
+                        baskets[(char)96].Add(word);
+                    }
+                }
+
+                if (baskets[(char)96].Count == array.Count)
+                    return array;
+
+                List<string> output = new List<string>();
+                for (int i = 96; i <= 122; i++)
+                {
+                    if (baskets.ContainsKey((char)i))
+                    {
+                        foreach (string word in GetRecursiveMsdSortedArray(baskets[(char)i], depth + 1))
+                            output.Add(word);
+                    }
+                }
+
+                return output;
+            }
+            else
+            {
+                return array;
+            }
+        }
+
         private static List<Queue<string>> GetSortedSubArrays(string filePath)
         {
-            char[] punctuationMarks = { '.', ',', ';', ':', '!', '?', '(', ')', '\'', '"' };
-
             List<Queue<string>> output = new List<Queue<string>>();
             
             string pastWord = string.Empty;
@@ -71,9 +159,11 @@ namespace WordsSort
                 do
                 {
                     characterInt = file.Read();
-                } while (characterInt != -1 && ((characterInt >= 8216 && characterInt <= 8223) || characterInt == 13 ||
-                        punctuationMarks.Contains((char)characterInt)));
-                char character = (char)characterInt;
+                } while (characterInt != -1 && !(
+                (characterInt >= 65 && characterInt <= 90) ||
+                (characterInt >= 97 && characterInt <= 122) ||
+                characterInt == 32 || characterInt == 13));
+                char character = Char.ToLower((char)characterInt);
 
                 if (character != ' ' && character != '\n' && characterInt != -1)
                 {
@@ -138,8 +228,6 @@ namespace WordsSort
 
         private static string[] GetInsertsSortedArray(string filePath)
         {
-            char[] punctuationMarks = { '.', ',', ';', ':', '!', '?', '(', ')', '\'', '"' };
-
             LinkedList<string> output = new LinkedList<string>();
 
             StreamReader file = new StreamReader(filePath);
@@ -150,9 +238,11 @@ namespace WordsSort
                 do
                 {
                     characterInt = file.Read();
-                } while (characterInt != -1 && ((characterInt >= 8216 && characterInt <= 8223) || characterInt == 13 ||
-                        punctuationMarks.Contains((char)characterInt)));
-                char character = (char)characterInt;
+                } while (characterInt != -1 && !(
+                (characterInt >= 65 && characterInt <= 90) ||
+                (characterInt >= 97 && characterInt <= 122) ||
+                characterInt == 32 || characterInt == 13));
+                char character = Char.ToLower((char)characterInt);
 
                 if (character != ' ' && character != '\n' && characterInt != -1)
                 {
@@ -192,6 +282,7 @@ namespace WordsSort
     enum SortType
     {
         Inserts,
-        Merges
+        Merges,
+        MSD
     }
 }
