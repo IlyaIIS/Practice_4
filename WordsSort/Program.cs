@@ -7,7 +7,7 @@ namespace WordsSort
     {
         static void Main(string[] args)
         {
-            string[] words = Sorter.GetSortedWordsArrayFromPdf(@"Tolkien_The_Fellowship_of_the_Ring.pdf", SortType.Merges);
+            string[] words = Sorter.GetSortedWordsArrayFromPdf(@"Tolkien_The_Fellowship_of_the_Ring.pdf", SortType.Inserts);
 
             NumberedSet<string> set = new NumberedSet<string>(words);
 

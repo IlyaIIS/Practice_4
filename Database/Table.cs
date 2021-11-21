@@ -13,6 +13,7 @@ namespace Database
         public int RowCount { get; private set; }
         public string[] Attributes { get; }
         public ColumnType[] Types { get; }
+        public static List<string> Log { get; private set; }
         public Table(string path)
         {
             FilePath = path;
@@ -105,6 +106,7 @@ namespace Database
 
         public Table GetSortedTable(string outputPath, bool ascending, string attribute, SortType sortType)
         {
+            Log = new List<string>();
             int attributeNum = -1;
             for (int i = 0; i < ColumnCount; i++)
             {
@@ -116,14 +118,14 @@ namespace Database
 
             if (sortType == SortType.Direct)
             {
-
+                Log.Add("Начало сортировки прямого слияния");
                 SubSortDirectly(outputPath, ascending, attributeNum, 0);
-
+                Log.Add("Конец сортировки прямого слияния");
                 return (new Table(outputPath));
-
             }
             else if (sortType == SortType.Natural)
             {
+                Log.Add("Начало сортировки естественного слияния");
                 string directoryPath = "temp";
 
                 SplitIntoTablesNaturally(directoryPath, attributeNum, ascending);
@@ -147,16 +149,17 @@ namespace Database
                 } while (Directory.GetFiles(newDirectoryPath).Length > 1);
 
                 File.Copy(Directory.GetFiles(newDirectoryPath)[0], outputPath, true);
-
+                Log.Add("Конец сортировки естественного слияния");
                 return (new Table(outputPath));
             }
             else if (sortType == SortType.Multipath)
             {
+                Log.Add("Начало сортировки многопутевого слияния");
                 string directoryPath = "temp";
 
                 SplitIntoTablesNaturally(directoryPath, attributeNum, ascending);
                 MergeSortedTables(outputPath, Directory.GetFiles(directoryPath), attributeNum, ascending);
-
+                Log.Add("Конец сортировки многопутевого слияния");
                 return (new Table(outputPath));
             }
             else
@@ -170,12 +173,16 @@ namespace Database
             {
                 string path1 = @"temp\temp_" + depth.ToString() + "_1";
                 string path2 = @"temp\temp_" + depth.ToString() + "_2";
+                Log.Add(new string(' ', depth) + "Файл \"" + FilePath + "\" разбивается на 2 файла: \"" + path1 + "\" \"" + path2 + "\"");
                 SplitIntoTwoTableDirectly(path1, path2);
                 Table table1 = new Table(path1);
                 Table table2 = new Table(path2);
+                Log.Add(new string(' ', depth+1) + "Начало сортировки файла \"" + path1 + "\"");
                 table1.SubSortDirectly(path1, ascending, columnNum, depth + 1);
+                Log.Add(new string(' ', depth+1) + "Начало сортировки файла \"" + path2 + "\"");
                 table2.SubSortDirectly(path2, ascending, columnNum, depth + 1);
                 MergeSortedTables(outputPath, new string[] { path1, path2 }, columnNum, ascending);
+                Log[^1] = Log[^1].Insert(0, new string(' ', depth));
             }
             else
             {
@@ -227,6 +234,7 @@ namespace Database
         }
         public void SplitIntoTablesNaturally(string outputDirectoryPath, int checkedColumnNum, bool ascending)
         {
+            Log.Add("Файл \"" + FilePath + "\" разбивается на файлы:");
             int dir = ascending ? 1 : -1;
             List<Table> tables = new List<Table>();
 
@@ -283,6 +291,7 @@ namespace Database
 
                 currentFile.Close();
                 tables[j].SetRowCount(rowCount);
+                Log[^1] += " " + tables[j].FilePath;
                 j++;
             }
 
@@ -290,6 +299,10 @@ namespace Database
         }
         void MergeSortedTables(string outputPath, string[] inputPath, int columnNum, bool ascending)
         {
+            string filesNames = string.Empty;
+            foreach (string line in inputPath)
+                filesNames += " " + line;
+            Log.Add("Файлы" + filesNames + " сливаются в файл " + outputPath);
             int dir = ascending ? 1 : -1;
             Table[] tables = new Table[inputPath.Length];
             for (int i = 0; i < inputPath.Length; i++)

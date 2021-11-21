@@ -13,7 +13,7 @@ namespace WordsSort
         {
             string textFilePath = fileName.Replace(".pdf", ".txt");
 
-            if (!File.Exists(textFilePath))
+            //if (!File.Exists(textFilePath))
             {
                 PdfFocus f = new PdfFocus();
                 f.OpenPdf(@"..\..\..\" + fileName);
