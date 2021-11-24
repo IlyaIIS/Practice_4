@@ -8,9 +8,9 @@ namespace Database
     {
         static void Main(string[] args)
         {
-            Table table = new Table("TestTable.txt");
+            Table table = new Table(@"..\..\..\TestTable.txt");
             
-            Table sortedTable = table.GetSortedTable("Result.txt", true, "SecondColumn", SortType.Direct);
+            Table sortedTable = table.GetSortedTable(@"..\..\..\Result.txt", true, "FirstColumn", SortType.Natural);
             /*Table.GetFilteredTable(sortedTable, "FiltredResul.txt", new Condition(sortedTable, "FirstColumn", (value) =>
                 {
                     return (int)value >= 3;
@@ -20,6 +20,8 @@ namespace Database
             foreach(string line in Table.Log)
             {
                 Console.WriteLine(line);
+                Console.ReadKey(false);
+                Console.WriteLine("\r ");
             }
 
             //AskUserForSort();

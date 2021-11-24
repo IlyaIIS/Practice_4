@@ -171,30 +171,32 @@ namespace Database
         {
             if (RowCount > 1)
             {
+                Log.Add("Начало сортировки файла \"" + FilePath + "\"");
                 string path1 = @"temp\temp_" + depth.ToString() + "_1";
                 string path2 = @"temp\temp_" + depth.ToString() + "_2";
-                Log.Add(new string(' ', depth) + "Файл \"" + FilePath + "\" разбивается на 2 файла: \"" + path1 + "\" \"" + path2 + "\"");
+                if (!Directory.Exists("temp"))
+                    Directory.CreateDirectory("temp");
+                Log.Add("Файл \"" + FilePath + "\" разбивается на 2 файла: \"" + path1 + "\" \"" + path2 + "\" по принципу чётности элементов.");
                 SplitIntoTwoTableDirectly(path1, path2);
                 Table table1 = new Table(path1);
                 Table table2 = new Table(path2);
-                Log.Add(new string(' ', depth+1) + "Начало сортировки файла \"" + path1 + "\"");
                 table1.SubSortDirectly(path1, ascending, columnNum, depth + 1);
-                Log.Add(new string(' ', depth+1) + "Начало сортировки файла \"" + path2 + "\"");
                 table2.SubSortDirectly(path2, ascending, columnNum, depth + 1);
                 MergeSortedTables(outputPath, new string[] { path1, path2 }, columnNum, ascending);
                 Log[^1] = Log[^1].Insert(0, new string(' ', depth));
             }
             else
             {
+                Log.Add("Файл \"" + FilePath + "\" состоит из 1-го элемента");
                 return;
             }
         }
 
         void SplitIntoTwoTableDirectly(string outputPath1, string outputPath2)
         {
-            if (!File.Exists(outputPath1))
+            if (File.Exists(outputPath1))
                 File.Delete(outputPath1);
-            if (!File.Exists(outputPath2))
+            if (File.Exists(outputPath2))
                 File.Delete(outputPath2);
 
             Table table1 = new Table(outputPath1, this, false);
@@ -234,7 +236,7 @@ namespace Database
         }
         public void SplitIntoTablesNaturally(string outputDirectoryPath, int checkedColumnNum, bool ascending)
         {
-            Log.Add("Файл \"" + FilePath + "\" разбивается на файлы:");
+            Log.Add("В файле \"" + FilePath + "\" ищутся серии: ");
             int dir = ascending ? 1 : -1;
             List<Table> tables = new List<Table>();
 
@@ -256,6 +258,7 @@ namespace Database
             TableElement[] pastElements = ParseToElements(ParseLine(pastLine, ColumnCount), ColumnCount, Types);
             while (pastLine != null)
             {
+                Log[^1] += "| ";
                 string path = outputDirectoryPath + @"\temp_" + j + ".txt";
                 tables.Add(new Table(path, this, false));
                 currentFile = new StreamWriter(path);
@@ -266,6 +269,7 @@ namespace Database
 
                 while (true)
                 {
+                    Log[^1] += pastElements[checkedColumnNum].Value.ToString() + " ";
                     currentFile.WriteLine(pastLine);
                     rowCount++;
 
@@ -291,8 +295,13 @@ namespace Database
 
                 currentFile.Close();
                 tables[j].SetRowCount(rowCount);
-                Log[^1] += " " + tables[j].FilePath;
                 j++;
+            }
+
+            Log[^1] += "|\nЭти серии записываются в файлы: ";
+            foreach(Table table in tables)
+            {
+                Log[^1] += " " + table.FilePath;
             }
 
             originFile.Close();
@@ -326,27 +335,36 @@ namespace Database
             for (int i = 0; i < inputPath.Length; i++)
                 lines[i] = files[i].ReadLine();
             TableElement[][] elements = new TableElement[inputPath.Length][];
+            Log.Add("Считываются первые элементы сливаемых файлов: ");
             for (int i = 0; i < inputPath.Length; i++)
+            {
                 elements[i] = ParseToElements(ParseLine(lines[i], ColumnCount), ColumnCount, Types);
+                Log[^1] += elements[i][columnNum].Value.ToString() + " ";
+            }
             do
             {
                 int j = GetMinOrMaxElementNum(elements);
                 if (j != -1)
                 {
                     outputFile.WriteLine(lines[j]);
+                    Log[^1] += "\nИз них берётся нужный: " + elements[j][columnNum].Value.ToString();
+                    Log[^1] += "\nСтрока \"" + lines[j] + "\" записывается в результирующий файл";
                     if (!files[j].EndOfStream)
                     {
                         lines[j] = files[j].ReadLine();
                         elements[j] = ParseToElements(ParseLine(lines[j], ColumnCount), ColumnCount, Types);
+                        Log[^1] += "\nИз " + (j+1) + "-го файла считывается следующий элемент: " + elements[j][columnNum].Value.ToString();
                     }
                     else
                     {
+                        Log[^1] += "\nВ " + (j+1) + "-м файле это был последний элемент, поэтому его элемент помечаем как к/ф (конец файла)";
                         lines[j] = null;
                         elements[j] = null;
                     }
                 }
                 else
                 {
+                    Log[^1] += "\nВсе элементы были распределены, а значит файлы успешно слиты";
                     break;
                 }
             } while (true);
@@ -362,14 +380,23 @@ namespace Database
 
             int GetMinOrMaxElementNum(TableElement[][] elements)
             {
+                Log.Add("Сравниваются элементы: ");
                 TableElement[] currentLine = null;
                 int output = -1;
                 for (int i = 0; i < inputPath.Length; i++)
                 {
-                    if (elements[i] != null && (currentLine == null || (currentLine[columnNum].CompareTo(elements[i][columnNum]) == dir)))
+                    if (elements[i] != null)
                     {
-                        currentLine = elements[i];
-                        output = i;
+                        Log[^1] += elements[i][columnNum].Value.ToString() + " ";
+                        if (currentLine == null || (currentLine[columnNum].CompareTo(elements[i][columnNum]) == dir))
+                        {
+                            currentLine = elements[i];
+                            output = i;
+                        }
+                    }
+                    else
+                    {
+                        Log[^1] += "к/ф ";
                     }
                 }
                 return output;
